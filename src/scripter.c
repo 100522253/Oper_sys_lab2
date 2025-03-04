@@ -70,6 +70,23 @@ void procesar_redirecciones(char *args[]) {
     }
 }
 
+void print_commands(){
+    /*
+    Delete for submission !!!!
+    */
+    printf("Comando = %s\n", argvv[0]);
+    for(int arg = 1; arg < max_args; arg++)
+        if(argvv[arg] != NULL)
+            printf("Args = %s\n", argvv[arg]); 
+            
+    printf("Background = %d\n", background);
+    if(filev[0] != NULL)
+        printf("Redir [IN] = %s\n", filev[0]);
+    if(filev[1] != NULL)
+        printf("Redir [OUT] = %s\n", filev[1]);
+    if(filev[2] != NULL)
+        printf("Redir [ERR] = %s\n", filev[2]);
+}
 
 int procesar_linea(char *linea) {
     /*
@@ -93,23 +110,7 @@ int procesar_linea(char *linea) {
     for (int i = 0; i < num_comandos; i++) {
         int args_count = tokenizar_linea(comandos[i], " \t\n", argvv, max_args);
         procesar_redirecciones(argvv);
-
-        /********* This piece of code prints the command, args, redirections and background. **********/
-        /*********************** REMOVE BEFORE THE SUBMISSION *****************************************/
-        /*********************** IMPLEMENT YOUR CODE FOR PROCESSES MANAGEMENT HERE ********************/
-        printf("Comando = %s\n", argvv[0]);
-        for(int arg = 1; arg < max_args; arg++)
-            if(argvv[arg] != NULL)
-                printf("Args = %s\n", argvv[arg]); 
-                
-        printf("Background = %d\n", background);
-        if(filev[0] != NULL)
-            printf("Redir [IN] = %s\n", filev[0]);
-        if(filev[1] != NULL)
-            printf("Redir [OUT] = %s\n", filev[1]);
-        if(filev[2] != NULL)
-            printf("Redir [ERR] = %s\n", filev[2]);
-        /**********************************************************************************************/
+        print_commands(); //!!! Deleted for submission
     }
 
     return num_comandos;
@@ -119,8 +120,9 @@ int main(int argc, char *argv[]) {
     // Check ##Script de SSOO\n
 
     // Check empty lines
-    /* STUDENTS CODE MUST BE HERE */
-    char example_line[] = "ls -l | grep scripter | wc -l > redir_out.txt &";
+
+
+    char example_line[] = "ls -l | grep scripter | wc -l !> redir_out.txt &";
     int n_commands = procesar_linea(example_line);
     
     return 0;
