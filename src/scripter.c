@@ -13,15 +13,20 @@ const int max_commands = 10;
 #define max_args 15
 
 /* VARS TO BE USED FOR THE STUDENTS */
-char * argvv[max_args];
-char * filev[max_redirections];
+
+// structure equivalent to the "argv" that stores the command line when executing a program.
+char * argvv[max_args]; 
+// redirections array. If a redirection is detected, the file name is referenced at the corresponding position
+char * filev[max_redirections]; 
+// indicates whether a command or command sequence is to be executed in foreground (0) or bg (1).
 int background = 0; 
 
-/**
- * This function splits a char* line into different tokens based on a given character
- * @return Number of tokens 
- */
+
 int tokenizar_linea(char *linea, char *delim, char *tokens[], int max_tokens) {
+    /*
+    This function splits a char* line into different tokens based on a given character
+    @return Number of tokens 
+    */
     int i = 0;
     char *token = strtok(linea, delim);
     while (token != NULL && i < max_tokens - 1) {
@@ -32,14 +37,16 @@ int tokenizar_linea(char *linea, char *delim, char *tokens[], int max_tokens) {
     return i;
 }
 
-/**
- * This function processes the command line to evaluate if there are redirections. 
- * If any redirection is detected, the destination file is indicated in filev[i] array.
- * filev[0] for STDIN
- * filev[1] for STDOUT
- * filev[2] for STDERR
- */
+
 void procesar_redirecciones(char *args[]) {
+    /*
+    This function processes the command line to evaluate if there are redirections. 
+    If any redirection is detected, the destination file is indicated in filev[i] array.
+    filev[0] for STDIN
+    filev[1] for STDOUT
+    filev[2] for STDERR
+    */
+
     //initialization for every command
     filev[0] = NULL;
     filev[1] = NULL;
@@ -63,13 +70,14 @@ void procesar_redirecciones(char *args[]) {
     }
 }
 
-/**
- * This function processes the input command line and returns in global variables: 
- * argvv -- command an args as argv 
- * filev -- files for redirections. NULL value means no redirection. 
- * background -- 0 means foreground; 1 background.
- */
+
 int procesar_linea(char *linea) {
+    /*
+    This function processes the input command line and returns in global variables: 
+    argvv -- command an args as argv 
+    filev -- files for redirections. NULL value means no redirection. 
+    background -- 0 means foreground; 1 background.
+    */
     char *comandos[max_commands];
     int num_comandos = tokenizar_linea(linea, "|", comandos, max_commands);
 
@@ -108,7 +116,9 @@ int procesar_linea(char *linea) {
 }
 
 int main(int argc, char *argv[]) {
+    // Check ##Script de SSOO\n
 
+    // Check empty lines
     /* STUDENTS CODE MUST BE HERE */
     char example_line[] = "ls -l | grep scripter | wc -l > redir_out.txt &";
     int n_commands = procesar_linea(example_line);

@@ -54,3 +54,7 @@ dkms.conf
 *.vscode
 *.zip
 *.o
+# Ignorar cualquier archivo sin extensión que sea ejecutable
+**
+!*.c
+!*.h
