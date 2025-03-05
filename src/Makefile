@@ -1,7 +1,7 @@
 # NO TOCAR / NOT MODIFIED ME ##
 CC=gcc
 FLAGS=-Wno-implicit-function-declaration
-CFLAGS=-I.
+CFLAGS=-I. -g
 ###############################
 
 # MODIFIED ME ##

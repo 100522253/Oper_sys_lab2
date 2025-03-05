@@ -54,6 +54,7 @@ dkms.conf
 *.vscode
 *.zip
 *.o
+*.clang-format
 # Ignorar cualquier archivo sin extensión que sea ejecutable
 **
 !*.c
