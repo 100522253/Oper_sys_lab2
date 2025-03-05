@@ -88,6 +88,25 @@ void print_commands(){
         printf("Redir [ERR] = %s\n", filev[2]);
 }
 
+void execute_command(){
+        pid_t pid = fork();
+        if (pid < 0){
+            exit(-1);
+        }
+        if(pid == 0){ 
+            //create son
+            printf ("Son created\n");
+            // execute the command
+            execvp (argvv[0], argvv);
+            perror("Command failed");
+
+        } else if(background){
+            printf("%d\n", pid);
+        }
+        wait (NULL); 
+        // End parent
+        }
+
 int procesar_linea(char *linea) {
     /*
     This function processes the input command line and returns in global variables: 
@@ -96,7 +115,7 @@ int procesar_linea(char *linea) {
     background -- 0 means foreground; 1 background.
     */
     char *comandos[max_commands];
-    int num_comandos = tokenizar_linea(linea, "|", comandos, max_commands);
+    int num_comandos = tokenizar_linea(linea, "|", comandos, max_commands);// Split line commands
 
     //Check if background is indicated
     if (strchr(comandos[num_comandos - 1], '&')) {
@@ -110,20 +129,99 @@ int procesar_linea(char *linea) {
     for (int i = 0; i < num_comandos; i++) {
         int args_count = tokenizar_linea(comandos[i], " \t\n", argvv, max_args);
         procesar_redirecciones(argvv);
-        print_commands(); //!!! Deleted for submission
-    }
+        print_commands(); //!!! Delete for submission
 
+        execute_command();
+    }
     return num_comandos;
 }
 
+int read_script(char* script_path, char* lines[], int *line_count){
+    int file = open(script_path, O_RDONLY);
+    if (file == -1){
+        perror("Error opening input script");
+        return -1;
+    }
+
+    char char_read;
+    int line_index = 0;
+    ssize_t bytes_read;
+
+    // Read the whole script
+    while((bytes_read = read(file, &char_read,1)) > 0){
+        // Check if it is a end of line
+        if (char_read == '\n'){
+            // Check if it is an empty line
+            if (line_index == 0){
+                perror("There was a empty line in the script");
+                return -1;
+            }
+
+            // End the line in the array
+            lines[*line_count][line_index] = '\0';
+            line_count++;
+            line_index = 0;
+
+            if (*line_count >= max_commands) {
+                perror("Exceeded maximum line count");
+                break;
+            }
+        } else {
+            lines[*line_count][line_index] = char_read;
+            line_index ++;
+
+            if (*line_count >= max_line -1) {
+                perror("Exceeded maximum line length");
+                break;
+            }
+        }
+    }
+    // Check if there are an error reading the script
+    if (bytes_read == -1){
+        perror("Error reading the input string");
+        return -1;
+    }
+
+    if (close(file) < 0){
+        perror("Error closing input file");
+        return -1;
+    }
+
+    // Handle the last line if it didn’t end with '\n'
+    if (line_index > 0) {
+        lines[*line_count][line_index] = '\0';
+        line_count++;
+    }
+    return 0; // There was not any error
+}
+
 int main(int argc, char *argv[]) {
-    // Check ##Script de SSOO\n
+    if (argc != 2) {
+        // Check arguments
+        printf("Usage: %s <ruta_fichero>\n", argv[0]);
+        return -1;
+    
+    }
+    
+    char lines[max_commands][max_line]; // Array that store the lines of the script
+    int line_count = 0;
 
-    // Check empty lines
+    if(read_script(argv[1], lines, &line_count) < 0){
+        return -1;
+    }
+    
+    // Check ##Script de SSOO
+    if (lines[0] != "Script de SSOO"){
+        perror("The script does not start with: \"## Script de SSOO\"");
+        return -1;
+    }
 
+    // Process the lines
+    for (size_t i=0; i < line_count; i++){
+        char example_line[] = "ls -l | pwd &";//"ls -l > pepe.txt | grep scripter | wc -l !> redir_out.txt &";
+        int n_commands = procesar_linea(example_line);
+    }
 
-    char example_line[] = "ls -l | grep scripter | wc -l !> redir_out.txt &";
-    int n_commands = procesar_linea(example_line);
     
     return 0;
 }
