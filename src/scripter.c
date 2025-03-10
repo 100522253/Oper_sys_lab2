@@ -91,19 +91,46 @@ void print_commands(){
 void execute_command(){
         pid_t pid = fork();
         if (pid < 0){
+            perror("Error creating the process");
             exit(-1);
         }
-        if(pid == 0){ 
-            //create son
-            printf ("Son created\n");
+        if(pid == 0){// create son
+            if(filev[0]){
+                int fd = open(filev[0], O_RDONLY, 0660);
+                if (fd == -1) {
+                    perror("Error opening input file for read");
+                    exit(1);
+                }
+                dup2(fd, STDIN_FILENO); // Redirect stdin to fd
+                close(fd);
+            }
+            if(filev[1]){
+                int fd = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
+                if (fd == -1) {
+                    perror("Error creating output file");
+                    exit(1);
+                }
+                dup2(fd, STDOUT_FILENO); // Redirect stdout to fd
+                close(fd);
+            }
+            if(filev[2]){
+                int fd = open(filev[2], O_RDWR | O_CREAT | O_TRUNC, 0660);
+                if (fd == -1) {
+                    perror("Error creating error file");
+                    exit(1);
+                }
+                dup2(fd, STDERR_FILENO); // Redirect stderr to fd
+                close(fd);
+            }
             // execute the command
             execvp (argvv[0], argvv);
-            perror("Command failed");
-
-        } else if(background){
-            printf("%d\n", pid);
+            perror("Command execution failed");
+        } else if(!background) {
+            int status;
+            waitpid(pid, &status, 0); // Wait for child process if not background
+        } else {
+            printf("Background process started (PID: %d)\n", pid); // Background (&) activated
         }
-        wait (NULL); 
         // End parent
         }
 
@@ -123,12 +150,18 @@ int procesar_linea(char *linea) {
         char *pos = strchr(comandos[num_comandos - 1], '&'); 
         //remove character 
         *pos = '\0';
+    } else {
+        background = 0;
     }
 
     //Finish processing
     for (int i = 0; i < num_comandos; i++) {
         int args_count = tokenizar_linea(comandos[i], " \t\n", argvv, max_args);
         procesar_redirecciones(argvv);
+        /*
+            |       My code     |
+            V                   V
+        */
         print_commands(); //!!! Delete for submission
 
         execute_command();
@@ -136,7 +169,10 @@ int procesar_linea(char *linea) {
     return num_comandos;
 }
 
-int read_script(char* script_path, char* lines[], int *line_count){
+int read_script(char* script_path, char lines[][max_line], int *line_count){
+    /*
+    Read the script and parse the lines
+    */
     int file = open(script_path, O_RDONLY);
     if (file == -1){
         perror("Error opening input script");
@@ -159,13 +195,14 @@ int read_script(char* script_path, char* lines[], int *line_count){
 
             // End the line in the array
             lines[*line_count][line_index] = '\0';
-            line_count++;
+            (*line_count)++;
             line_index = 0;
 
             if (*line_count >= max_commands) {
                 perror("Exceeded maximum line count");
                 break;
             }
+
         } else {
             lines[*line_count][line_index] = char_read;
             line_index ++;
@@ -176,6 +213,7 @@ int read_script(char* script_path, char* lines[], int *line_count){
             }
         }
     }
+
     // Check if there are an error reading the script
     if (bytes_read == -1){
         perror("Error reading the input string");
@@ -190,7 +228,7 @@ int read_script(char* script_path, char* lines[], int *line_count){
     // Handle the last line if it didn’t end with '\n'
     if (line_index > 0) {
         lines[*line_count][line_index] = '\0';
-        line_count++;
+        (*line_count)++;
     }
     return 0; // There was not any error
 }
@@ -209,17 +247,17 @@ int main(int argc, char *argv[]) {
     if(read_script(argv[1], lines, &line_count) < 0){
         return -1;
     }
-    
+
     // Check ##Script de SSOO
-    if (lines[0] != "Script de SSOO"){
-        perror("The script does not start with: \"## Script de SSOO\"");
+    if (strcmp(lines[0],"## Script de SSOO") != 0){
+        perror("The script does not start with: \"## Script de SSOO\"\n");
         return -1;
     }
 
     // Process the lines
-    for (size_t i=0; i < line_count; i++){
-        char example_line[] = "ls -l | pwd &";//"ls -l > pepe.txt | grep scripter | wc -l !> redir_out.txt &";
-        int n_commands = procesar_linea(example_line);
+    for (size_t i=1; i < line_count; i++){
+        //char example_line[] = "ls -l | pwd &";//"ls -l > pepe.txt | grep scripter | wc -l !> redir_out.txt &";
+        int n_commands = procesar_linea(lines[i]);
     }
 
     
