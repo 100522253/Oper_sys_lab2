@@ -88,51 +88,84 @@ void print_commands(){
         printf("Redir [ERR] = %s\n", filev[2]);
 }
 
-void execute_command(){
-        pid_t pid = fork();
-        if (pid < 0){
-            perror("Error creating the process");
+void execute_command(int num_commands, int iter_command){
+     int fd[2];
+    pid_t pid;
+     static int prev_pipe_fd = -1; // The variable is static, so it is preserved among calls
+     int input_fd = STDIN_FILENO, output_fd = STDOUT_FILENO;
+
+    // If the numb of commands is >1 that means that there are pipes in the line
+    if(num_commands > 1 && iter_command != num_commands-1){
+        if (pipe(fd) == -1) {
+            perror("Error creating pipe");
             exit(-1);
         }
-        if(pid == 0){// create son
-            if(filev[0]){
-                int fd = open(filev[0], O_RDONLY, 0660);
-                if (fd == -1) {
-                    perror("Error opening input file for read");
-                    exit(1);
-                }
-                dup2(fd, STDIN_FILENO); // Redirect stdin to fd
-                close(fd);
+    }
+
+    pid = fork();
+        
+    if (pid < 0){
+        perror("Error creating the process");
+        exit(-1);
+    }
+    if(pid == 0){// create son
+        // Handle input redirection
+        if(filev[0]){
+            input_fd = open(filev[0], O_RDONLY, 0660);
+            if (input_fd == -1) {
+                perror("Error opening input file for read");
+                exit(1);
+            } else if (prev_pipe_fd != -1) {
+                input_fd = prev_pipe_fd;
             }
-            if(filev[1]){
-                int fd = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
-                if (fd == -1) {
-                    perror("Error creating output file");
-                    exit(1);
-                }
-                dup2(fd, STDOUT_FILENO); // Redirect stdout to fd
-                close(fd);
+
+            if (input_fd != STDIN_FILENO) {
+                dup2(fd[0], STDIN_FILENO); // Redirect stdin to fd
+                close(fd[0]);
             }
-            if(filev[2]){
-                int fd = open(filev[2], O_RDWR | O_CREAT | O_TRUNC, 0660);
-                if (fd == -1) {
-                    perror("Error creating error file");
-                    exit(1);
-                }
-                dup2(fd, STDERR_FILENO); // Redirect stderr to fd
-                close(fd);
+        }
+        // Handle output redirection
+        if(filev[1]){
+            fd[0] = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
+            if (fd[0] == -1) {
+                perror("Error creating output file");
+                exit(1);
             }
-            // execute the command
-            execvp (argvv[0], argvv);
-            perror("Command execution failed");
-        } else if(!background) {
+            dup2(fd[0], STDOUT_FILENO); // Redirect stdout to fd
+            close(fd[0]);
+        }
+        // Handle error redirection
+        if(filev[2]){
+            fd[0] = open(filev[2], O_RDWR | O_CREAT | O_TRUNC, 0660);
+            if (fd[0] == -1) {
+                perror("Error creating error file");
+                exit(1);
+            }
+            dup2(fd[0], STDERR_FILENO); // Redirect stderr to fd
+            close(fd[0]);
+        }
+        
+        // execute the command
+        execvp (argvv[0], argvv);
+        perror("Command execution failed");
+
+    } else {
+        if (prev_pipe_fd != -1) {
+            close(prev_pipe_fd);
+        }
+        if (num_commands > 1 && iter_command < num_commands - 1) {
+            close(fd[1]);
+            prev_pipe_fd = fd[0];
+
+        }if(!background) {
             int status;
             waitpid(pid, &status, 0); // Wait for child process if not background
         } else {
             printf("Background process started (PID: %d)\n", pid); // Background (&) activated
         }
-        // End parent
-        }
+    // End parent
+    }
+}
 
 int procesar_linea(char *linea) {
     /*
@@ -164,7 +197,7 @@ int procesar_linea(char *linea) {
         */
         print_commands(); //!!! Delete for submission
 
-        execute_command();
+        execute_command(num_comandos, i);
     }
     return num_comandos;
 }
