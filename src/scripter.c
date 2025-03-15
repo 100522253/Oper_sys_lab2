@@ -168,8 +168,6 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
         }
 
         // execute the command
-        perror("command executed");
-        //printf("command %s being executed", argvv[0]);
         execvp(argvv[0], argvv);
         perror("Command execution failed");
         exit(-1);
