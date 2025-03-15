@@ -117,31 +117,66 @@ int procesar_linea(char *linea) {
 	return num_comandos;
 }
 
-void execute_command(int argc, char *argv[]) {
-	int i, pid;
-	if (argc < 2) {
-		printf("Usage: exec-command <comand>\n");
-		exit(-1);
+// void execute_command(int argc, char *argv[]) {
+// 	int i, pid;
+// 	if (argc < 2) {
+// 		printf("Usage: exec-command <comand>\n");
+// 		exit(-1);
+// 	}
+// 	pid = fork();
+// 	if (pid == 0) { // crear hijo
+// 		printf("Hijo creado, va a ejecutar el comando\n");
+// 		// Ejecución comando
+// 		execvp(argv[1], &argv[1]);
+// 		printf("ERROR, aqui solo se llega si ha fallado el exec\n");
+// 	}
+// 	wait(NULL);
+// 	printf("FIN del padre\n");
+// }
+
+int verify_first_line(const char *path) {
+	int fd, sz;
+
+	// Allocate memory according to how many bytes you
+	// want to read of the file, in this case "## Script de SSOO\n" is 18
+	// character long, so 18 bytes
+	char *c = (char *)calloc(18, sizeof(char));
+
+	// Open the file using the provided path and return an error if it
+	// doesn't exist
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		perror("r1");
+		exit(1);
 	}
-	pid = fork();
-	if (pid == 0) { // crear hijo
-		printf("Hijo creado, va a ejecutar el comando\n");
-		// Ejecución comando
-		execvp(argv[1], &argv[1]);
-		printf("ERROR, aqui solo se llega si ha fallado el exec\n");
+
+	// After opening, read 18 chars corresponding to the pseudo
+	// shebang and store them in c
+	sz = read(fd, c, 18);
+	printf("called read(% d, c, 100). returned that"
+		   " %d bytes were read.\n",
+		   fd, sz);
+	c[sz] = '\0'; // Append this char to the end of c to know when it ends
+	printf("Those bytes are as follows:\n%s", c);
+
+	// Return -1 if the psudo shebang is incorrect
+	if (strcmp(c, "## Script de SSOO\n") != 0) {
+		return -1;
 	}
-	wait(NULL);
-	printf("FIN del padre\n");
+
+	return 0;
 }
 
 int main(int argc, char *argv[]) {
-	// Check ##Script de SSOO\n
+	// Check ## Script de SSOO\n
+	if (verify_first_line(argv[1]) == 0) {
+		printf("YES\n");
+	} else {
+		printf("NO\n");
+	};
 
-	// Check empty lines
-
-	char example_line[] =
-		"ls -l"; //| grep scripter | wc -l !> redir_out.txt &";
-	int n_commands = procesar_linea(example_line);
+	// char example_line[] = "ls -l | grep scripter | wc -l !> redir_out.txt &";
+	// int n_commands = procesar_linea(example_line);
 
 	return 0;
 }
