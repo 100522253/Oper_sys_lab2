@@ -88,11 +88,10 @@ void print_commands(){
         printf("Redir [ERR] = %s\n", filev[2]);
 }
 
-void execute_command(int num_commands, int iter_command){
-     int fd[2];
+void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
+    int fd[2] = {0};
     pid_t pid;
-     static int prev_pipe_fd = -1; // The variable is static, so it is preserved among calls
-     int input_fd = STDIN_FILENO, output_fd = STDOUT_FILENO;
+    int input_fd = STDIN_FILENO, output_fd = STDOUT_FILENO;
 
     // If the numb of commands is >1 that means that there are pipes in the line
     if(num_commands > 1 && iter_command != num_commands-1){
@@ -108,56 +107,90 @@ void execute_command(int num_commands, int iter_command){
         perror("Error creating the process");
         exit(-1);
     }
-    if(pid == 0){// create son
+    if(pid == 0){
+        // --CHILD PROCESS--
         // Handle input redirection
         if(filev[0]){
-            input_fd = open(filev[0], O_RDONLY, 0660);
+            input_fd = open(filev[0], O_RDONLY);
             if (input_fd == -1) {
                 perror("Error opening input file for read");
                 exit(1);
-            } else if (prev_pipe_fd != -1) {
-                input_fd = prev_pipe_fd;
             }
 
-            if (input_fd != STDIN_FILENO) {
-                dup2(fd[0], STDIN_FILENO); // Redirect stdin to fd
-                close(fd[0]);
-            }
+        } else if (*prev_pipe_fd != -1) {
+                input_fd = *prev_pipe_fd;
         }
+
+        if (input_fd != STDIN_FILENO) {
+            if (dup2(input_fd, STDIN_FILENO) < 0){
+                perror("Error dup2 input file descriptor");
+                exit(-1);
+            } // Redirect stdin to fd
+            close(input_fd);
+        }
+        
         // Handle output redirection
-        if(filev[1]){
-            fd[0] = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
-            if (fd[0] == -1) {
+        if (filev[1]){
+            output_fd = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
+            if (output_fd == -1) {
                 perror("Error creating output file");
                 exit(1);
             }
-            dup2(fd[0], STDOUT_FILENO); // Redirect stdout to fd
-            close(fd[0]);
+        } else if (num_commands > 1 && iter_command < num_commands - 1) {
+            output_fd = fd[1];
         }
+
+        if (output_fd != STDOUT_FILENO) {
+            if (dup2(output_fd, STDOUT_FILENO) < 0){
+                perror("Error dup2 output file descriptor");
+                exit(-1);
+            }
+            close(output_fd);
+        }
+
         // Handle error redirection
         if(filev[2]){
-            fd[0] = open(filev[2], O_RDWR | O_CREAT | O_TRUNC, 0660);
-            if (fd[0] == -1) {
+            int error_fd = open(filev[2], O_RDWR | O_CREAT | O_TRUNC, 0660);
+            if (error_fd == -1) {
                 perror("Error creating error file");
                 exit(1);
             }
-            dup2(fd[0], STDERR_FILENO); // Redirect stderr to fd
+            if(dup2(error_fd, STDERR_FILENO) < 0){
+                perror("Error dup2 error file descriptor");
+                exit(-1);
+            }
+            close(error_fd);
+        }
+
+        // Close unnecessary pipes
+        if (num_commands > 1 && iter_command != num_commands - 1) {
             close(fd[0]);
+            close(fd[1]);
         }
         
-        // execute the command
-        execvp (argvv[0], argvv);
-        perror("Command execution failed");
+        if (*prev_pipe_fd != -1) {
+            close(*prev_pipe_fd); // Close previous read end
+        }
 
-    } else {
-        if (prev_pipe_fd != -1) {
-            close(prev_pipe_fd);
+
+        // execute the command
+        perror("command executed");
+        //printf("command %s being executed", argvv[0]);
+        execvp(argvv[0], argvv);
+        perror("Command execution failed");
+        exit(-1);
+
+    } else { 
+        // --PARENT PROCESS--
+        if (*prev_pipe_fd != -1) {
+            close(*prev_pipe_fd); // Close previous read end
         }
         if (num_commands > 1 && iter_command < num_commands - 1) {
-            close(fd[1]);
-            prev_pipe_fd = fd[0];
-
-        }if(!background) {
+            close(fd[1]); // Close write end
+            *prev_pipe_fd = fd[0]; // Pass read end to next process
+        }
+        
+        if (!background) {
             int status;
             waitpid(pid, &status, 0); // Wait for child process if not background
         } else {
@@ -197,7 +230,8 @@ int procesar_linea(char *linea) {
         */
         print_commands(); //!!! Delete for submission
 
-        execute_command(num_comandos, i);
+        int prev_pipe_fd = -1;
+        execute_command(num_comandos, i, &prev_pipe_fd);
     }
     return num_comandos;
 }
