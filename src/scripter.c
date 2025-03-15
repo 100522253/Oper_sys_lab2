@@ -114,11 +114,11 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
             input_fd = open(filev[0], O_RDONLY);
             if (input_fd == -1) {
                 perror("Error opening input file for read");
-                exit(1);
+                exit(-1);
             }
 
         } else if (*prev_pipe_fd != -1) {
-                input_fd = *prev_pipe_fd;
+                input_fd = *prev_pipe_fd; // Use previous pipe's read end
         }
 
         if (input_fd != STDIN_FILENO) {
@@ -134,7 +134,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
             output_fd = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
             if (output_fd == -1) {
                 perror("Error creating output file");
-                exit(1);
+                exit(-1);
             }
         } else if (num_commands > 1 && iter_command < num_commands - 1) {
             output_fd = fd[1];
@@ -153,7 +153,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
             int error_fd = open(filev[2], O_RDWR | O_CREAT | O_TRUNC, 0660);
             if (error_fd == -1) {
                 perror("Error creating error file");
-                exit(1);
+                exit(-1);
             }
             if(dup2(error_fd, STDERR_FILENO) < 0){
                 perror("Error dup2 error file descriptor");
@@ -165,13 +165,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
         // Close unnecessary pipes
         if (num_commands > 1 && iter_command != num_commands - 1) {
             close(fd[0]);
-            close(fd[1]);
         }
-        
-        if (*prev_pipe_fd != -1) {
-            close(*prev_pipe_fd); // Close previous read end
-        }
-
 
         // execute the command
         perror("command executed");
@@ -221,6 +215,8 @@ int procesar_linea(char *linea) {
     }
 
     //Finish processing
+
+    int prev_pipe_fd = -1;
     for (int i = 0; i < num_comandos; i++) {
         int args_count = tokenizar_linea(comandos[i], " \t\n", argvv, max_args);
         procesar_redirecciones(argvv);
@@ -229,8 +225,6 @@ int procesar_linea(char *linea) {
             V                   V
         */
         print_commands(); //!!! Delete for submission
-
-        int prev_pipe_fd = -1;
         execute_command(num_comandos, i, &prev_pipe_fd);
     }
     return num_comandos;
