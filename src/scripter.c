@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -11,6 +12,7 @@ const int max_line = 1024;
 const int max_commands = 10;
 #define max_redirections 3 // stdin, stdout, stderr
 #define max_args 15
+#define BUFFER_SIZE 1024
 
 /* VARS TO BE USED FOR THE STUDENTS */
 
@@ -146,37 +148,93 @@ int verify_first_line(const char *path) {
 	// doesn't exist
 	fd = open(path, O_RDONLY);
 	if (fd < 0) {
-		perror("r1");
+		perror("Error opening file");
 		exit(1);
 	}
 
 	// After opening, read 18 chars corresponding to the pseudo
 	// shebang and store them in c
 	sz = read(fd, c, 18);
-	printf("called read(% d, c, 100). returned that"
-		   " %d bytes were read.\n",
-		   fd, sz);
-	c[sz] = '\0'; // Append this char to the end of c to know when it ends
-	printf("Those bytes are as follows:\n%s", c);
+
+	// Append this char to the end of c to know when it ends
+	c[sz] = '\0';
 
 	// Return -1 if the psudo shebang is incorrect
 	if (strcmp(c, "## Script de SSOO\n") != 0) {
+		errno = ENOEXEC;
+		perror("Shebang incorrect or missing");
 		return -1;
 	}
+
+	close(fd);
+
+	return 0;
+}
+
+int check_empty_lines(const char *path) {
+	// Open file
+	int fd = open(path, O_RDONLY);
+	if (fd == -1) {
+		perror("Error opening file");
+		return -1;
+	}
+
+	// Allocate memory to read file
+	char buffer[BUFFER_SIZE];
+	ssize_t bytes_read;
+
+	// Assume the file starts with a newline to detect an
+	// empty first line
+	char prev_char = '\n';
+
+	// Flag to check empty line
+	int in_empty_line = 1;
+
+	// Read file 1KB at a time and process it
+	while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
+		for (ssize_t i = 0; i < bytes_read; i++) {
+			char current_char = buffer[i];
+
+			if (current_char == '\n') {
+				if (in_empty_line) {
+					// Throw error when empty line is detected
+					errno = ENOMSG; // This was the most descriptive error
+									// message I could find
+					perror("Empty line detected");
+					return -1;
+				}
+				// Assume next line is empty until next iteration
+				in_empty_line = 1;
+
+			} else if (current_char != ' ' && current_char != '\t') {
+				// No longer on empty line
+				in_empty_line = 0;
+			}
+
+			prev_char = current_char;
+		}
+	}
+
+	if (bytes_read == -1) {
+		perror("Read error");
+	}
+
+	close(fd);
 
 	return 0;
 }
 
 int main(int argc, char *argv[]) {
-	// Check ## Script de SSOO\n
-	if (verify_first_line(argv[1]) == 0) {
-		printf("YES\n");
-	} else {
-		printf("NO\n");
-	};
+	// Verify Shebang
+	verify_first_line(argv[1]);
+
+	// Check no empty lines
+	check_empty_lines(argv[1]);
 
 	// char example_line[] = "ls -l | grep scripter | wc -l !> redir_out.txt &";
 	// int n_commands = procesar_linea(example_line);
+
+	printf("\nEnd of program succesfull\n");
 
 	return 0;
 }
