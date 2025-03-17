@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 	// char example_line[] = "ls -l | grep scripter | wc -l !> redir_out.txt &";
 	// int n_commands = procesar_linea(example_line);
 
-	printf("\nEnd of program succesfull\n");
+	printf("\nEnd of program succesfull \n");
 
 	return 0;
 }
