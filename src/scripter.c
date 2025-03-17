@@ -136,40 +136,40 @@ int procesar_linea(char *linea) {
 // 	printf("FIN del padre\n");
 // }
 
-int verify_first_line(const char *path) {
-	int fd, sz;
+// int verify_first_line(const char *path) {
+// 	int fd, sz;
 
-	// Allocate memory according to how many bytes you
-	// want to read of the file, in this case "## Script de SSOO\n" is 18
-	// character long, so 18 bytes
-	char *c = (char *)calloc(18, sizeof(char));
+// 	// Allocate memory according to how many bytes you
+// 	// want to read of the file, in this case "## Script de SSOO\n" is 18
+// 	// character long, so 18 bytes
+// 	char *c = (char *)calloc(18, sizeof(char));
 
-	// Open the file using the provided path and return an error if it
-	// doesn't exist
-	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		perror("Error opening file");
-		exit(1);
-	}
+// 	// Open the file using the provided path and return an error if it
+// 	// doesn't exist
+// 	fd = open(path, O_RDONLY);
+// 	if (fd < 0) {
+// 		perror("Error opening file");
+// 		exit(1);
+// 	}
 
-	// After opening, read 18 chars corresponding to the pseudo
-	// shebang and store them in c
-	sz = read(fd, c, 18);
+// 	// After opening, read 18 chars corresponding to the pseudo
+// 	// shebang and store them in c
+// 	sz = read(fd, c, 18);
 
-	// Append this char to the end of c to know when it ends
-	c[sz] = '\0';
+// 	// Append this char to the end of c to know when it ends
+// 	c[sz] = '\0';
 
-	// Return -1 if the psudo shebang is incorrect
-	if (strcmp(c, "## Script de SSOO\n") != 0) {
-		errno = ENOEXEC;
-		perror("Shebang incorrect or missing");
-		return -1;
-	}
+// 	// Return -1 if the psudo shebang is incorrect
+// 	if (strcmp(c, "## Script de SSOO\n") != 0) {
+// 		errno = ENOEXEC;
+// 		perror("Shebang incorrect or missing");
+// 		return -1;
+// 	}
 
-	close(fd);
+// 	close(fd);
 
-	return 0;
-}
+// 	return 0;
+// }
 
 int check_empty_lines(const char *path) {
 	// Open file
@@ -224,12 +224,83 @@ int check_empty_lines(const char *path) {
 	return 0;
 }
 
+char *read_line(int fd) {
+	char *line = NULL;
+	char buffer[1]; // Read one character at a time
+	ssize_t bytes_read;
+	size_t length = 0;
+
+	while ((bytes_read = read(fd, buffer, 1)) > 0) {
+		// Expand memory for the new character
+		char *new_line =
+			realloc(line, length + 2); // +2 for new char + null terminator
+		if (!new_line) {
+			free(line);
+			perror("Memory allocation failed");
+			return NULL;
+		}
+		line = new_line;
+
+		// Store the character
+		line[length] = buffer[0];
+		length++;
+
+		// Stop if a newline is found
+		if (buffer[0] == '\n') {
+			break;
+		}
+	}
+
+	// Handle EOF or errors
+	if (bytes_read == -1) {
+		perror("Error reading file");
+		free(line);
+		return NULL;
+	}
+	if (bytes_read == 0 && length == 0) {
+		// EOF reached with no data read
+		free(line);
+		return NULL;
+	}
+
+	// Null-terminate the string
+	line[length] = '\0';
+
+	return line;
+}
+
 int main(int argc, char *argv[]) {
 	// Verify Shebang
-	verify_first_line(argv[1]);
+	// verify_first_line(argv[1]);
 
 	// Check no empty lines
 	check_empty_lines(argv[1]);
+
+	int fd = open(argv[1], O_RDONLY);
+	if (fd == -1) {
+		perror("Error opening file");
+		return -1;
+	}
+
+	char *line;
+	int first_line = 1; // Flag to detect the first line
+
+	while ((line = read_line(fd)) != NULL) {
+		if (first_line) {
+			// Return -1 if the pseudo shebang is incorrect
+			if (strcmp(line, "## Script de SSOO\n") != 0) {
+				errno = ENOEXEC;
+				perror("Shebang incorrect or missing");
+				return -1;
+			}
+			first_line = 0; // Now we're reading subsequent lines
+		} else {
+			printf("Regular Line: %s\n", line);
+		}
+		free(line);
+	}
+
+	close(fd);
 
 	// char example_line[] = "ls -l | grep scripter | wc -l !> redir_out.txt &";
 	// int n_commands = procesar_linea(example_line);
