@@ -119,58 +119,6 @@ int procesar_linea(char *linea) {
 	return num_comandos;
 }
 
-// void execute_command(int argc, char *argv[]) {
-// 	int i, pid;
-// 	if (argc < 2) {
-// 		printf("Usage: exec-command <comand>\n");
-// 		exit(-1);
-// 	}
-// 	pid = fork();
-// 	if (pid == 0) { // crear hijo
-// 		printf("Hijo creado, va a ejecutar el comando\n");
-// 		// Ejecución comando
-// 		execvp(argv[1], &argv[1]);
-// 		printf("ERROR, aqui solo se llega si ha fallado el exec\n");
-// 	}
-// 	wait(NULL);
-// 	printf("FIN del padre\n");
-// }
-
-// int verify_first_line(const char *path) {
-// 	int fd, sz;
-
-// 	// Allocate memory according to how many bytes you
-// 	// want to read of the file, in this case "## Script de SSOO\n" is 18
-// 	// character long, so 18 bytes
-// 	char *c = (char *)calloc(18, sizeof(char));
-
-// 	// Open the file using the provided path and return an error if it
-// 	// doesn't exist
-// 	fd = open(path, O_RDONLY);
-// 	if (fd < 0) {
-// 		perror("Error opening file");
-// 		exit(1);
-// 	}
-
-// 	// After opening, read 18 chars corresponding to the pseudo
-// 	// shebang and store them in c
-// 	sz = read(fd, c, 18);
-
-// 	// Append this char to the end of c to know when it ends
-// 	c[sz] = '\0';
-
-// 	// Return -1 if the psudo shebang is incorrect
-// 	if (strcmp(c, "## Script de SSOO\n") != 0) {
-// 		errno = ENOEXEC;
-// 		perror("Shebang incorrect or missing");
-// 		return -1;
-// 	}
-
-// 	close(fd);
-
-// 	return 0;
-// }
-
 int check_empty_lines(const char *path) {
 	// Open file
 	int fd = open(path, O_RDONLY);
@@ -270,11 +218,6 @@ char *read_line(int fd) {
 }
 
 int main(int argc, char *argv[]) {
-	// Verify Shebang
-	// verify_first_line(argv[1]);
-
-	// Check no empty lines
-	check_empty_lines(argv[1]);
 
 	int fd = open(argv[1], O_RDONLY);
 	if (fd == -1) {
@@ -282,21 +225,28 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	char *line;
-	int first_line = 1; // Flag to detect the first line
-
-	while ((line = read_line(fd)) != NULL) {
-		if (first_line) {
-			// Return -1 if the pseudo shebang is incorrect
-			if (strcmp(line, "## Script de SSOO\n") != 0) {
-				errno = ENOEXEC;
-				perror("Shebang incorrect or missing");
-				return -1;
-			}
-			first_line = 0; // Now we're reading subsequent lines
-		} else {
-			printf("Regular Line: %s\n", line);
+	// Verify Shebang
+	char *first_line = read_line(fd);
+	if (first_line) {
+		// Return -1 if the pseudo shebang is incorrect
+		if (strcmp(first_line, "## Script de SSOO\n") != 0) {
+			errno = ENOEXEC;
+			perror("Shebang incorrect or missing");
+			return -1;
 		}
+		free(first_line);
+	}
+
+	// Check no empty lines
+	if (check_empty_lines(argv[1]) == -1) {
+		return -1;
+	}
+
+	// Read the rest of the file
+	char *line;
+	while ((line = read_line(fd)) != NULL) {
+		printf("LINE: %s\n", line);
+		int n_commands = procesar_linea(line);
 		free(line);
 	}
 
