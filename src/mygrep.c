@@ -1,51 +1,64 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define BUFFER_SIZE 2048
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <signal.h>
 
-void close_file(int file){
-    if(close(file) < 0){
-        perror("Error closing the file");
-        exit(-1);   
-    }
-}
 
 int main(int argc, char ** argv) {
-    if (argc != 3) {
+    if (argc != 3) { // Check the correct number of inputs
         printf("Usage: %s <ruta_fichero> <cadena_busqueda>\n", argv[0]);
         return -1;
     }
 
     // Open the file
-    int file = open(argv[1]);
-    if (file == -1){
+    int fd = open(argv[1], O_RDWR);
+    if (fd == -1){
+        // Check if the file was opended correctly
         perror("Error opening input script");
         return -1;
     }
 
-    char buffer[BUFFER_SIZE];
-    char line[BUFFER_SIZE];
-    int bytes_read, line_index = 0;
+    size_t byte_read;
+    char char_read = 0;     // Char read by the read syscall
+    int line_count = 0;     // Counter of lines
+    int input_idx = 0;      // Index of the input string searched
+    char string_found = 0;  // Flag whether for the seeked string found
 
-    while ((bytes_read = read(file, buffer, BUFFER_SIZE)) > 0) {
-        for (int i = 0; i < bytes_read; i++) {
-            if (buffer[i] == '\n' || line_index >= BUFFER_SIZE - 1) {
-                line[line_index] = '\0';  // Null-terminate the string
-                if (strstr(line, argv[2])) {  // Check if the line contains the search term
-                    write(STDOUT_FILENO, line, strlen(line));
-                    write(STDOUT_FILENO, "\n", 1);
-                }
-                line_index = 0;  // Reset for the next line
-            } else {
-                line[line_index++] = buffer[i];
-            }
+    while ((byte_read = read(fd, &char_read, sizeof(char))) > 0){
+        if (char_read == '\n'){ // New line -> reset counters
+            line_count++;
+            input_idx = 0;
+        } else if (char_read == argv[2][input_idx]){ // Read char is in seeked string
+            input_idx++;
+        } else {
+            input_idx = 0; // Char not in seeked string
+        }
+
+        if (input_idx >= strlen(argv[2])){
+            string_found = 1;
+            char line_char = (char)line_count;
+            if(write(STDOUT_FILENO, &line_char, sizeof(line_char)) < 0){
+                perror("Error writing in the standart output");
+                return -1;
+            };
+            input_idx = 0;
+            //printf("%d\n", line_count);
         }
     }
+    // Check write -1
 
-    if (bytes_read == -1) {
-        perror("Error reading file");
-        close(file);
-        exit(EXIT_FAILURE);
+
+    if (close(fd) < 0){
+        perror("Error closing the input file");
+        return -1;
     }
 
-    close(file);
+    if (!string_found){ // String not found so message displayed
+        printf("\"%s\" not found\n", argv[2]);
+    }
+
+    return 0;
+}

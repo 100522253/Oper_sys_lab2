@@ -243,7 +243,7 @@ int read_script(char* script_path, char lines[][max_line], int *line_count){
     ssize_t bytes_read;
 
     // Read the whole script
-    while((bytes_read = read(file, &char_read,1)) > 0){
+    while((bytes_read = read(file, &char_read, sizeof(char))) > 0){
         // Check if it is a end of line
         if (char_read == '\n'){
             // Check if it is an empty line
