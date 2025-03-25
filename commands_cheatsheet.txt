@@ -7,11 +7,11 @@ assuming the pwd is src/
 for zip:
 ./zipper.sh
 
-../test/rm ssoo_p2_100522253_100522146_100522100.zip
-../test/rmdir ssoo_p2_100522253_100522146_100522100
+./rmZipper.sh #Removes the zips and directories made by the tester
 
 tester:
+cd ../test/
 #test fácil
-../test/tester.sh ssoo_p2_100522253_100522146_100522100.zip 1
+./tester.sh ssoo_p2_100522253_100522146_100522100.zip 1
 #test medio
-../test/tester.sh ssoo_p2_100522253_100522146_100522100.zip 2
+./tester.sh ssoo_p2_100522253_100522146_100522100.zip 2
