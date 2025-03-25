@@ -48,7 +48,7 @@ int main(int argc, char ** argv) {
             //printf("%d\n", line_count);
         }
     }
-    // Check write -1
+    // Check write == -1
 
 
     if (close(fd) < 0){
@@ -56,8 +56,8 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    if (!string_found){ // String not found so message displayed
-        printf("\"%s\" not found\n", argv[2]);
+    if (!string_found){ // String not found then message displayed
+        printf("\"%s\" not found\n", argv[2]); // Don`t sure how to put the quotes MUST ASK ABOUT
     }
 
     return 0;

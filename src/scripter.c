@@ -186,7 +186,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
             int status;
             waitpid(pid, &status, 0); // Wait for child process if not background
         } else {
-            printf("Background process started (PID: %d)\n", pid); // Background (&) activated
+            printf("Background process started (PID: %d)\n", pid); // Background (&) activated, print the child pid
         }
     // End parent
     }
