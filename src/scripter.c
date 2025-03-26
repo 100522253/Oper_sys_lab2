@@ -222,7 +222,7 @@ int procesar_linea(char *linea) {
             |       My code     |
             V                   V
         */
-        print_commands(); //!!! Delete for submission
+        //print_commands(); //!!! Delete for submission
         execute_command(num_comandos, i, &prev_pipe_fd);
     }
     return num_comandos;

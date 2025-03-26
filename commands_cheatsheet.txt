@@ -15,3 +15,9 @@ cd ../test/
 ./tester.sh ssoo_p2_100522253_100522146_100522100.zip 1
 #test medio
 ./tester.sh ssoo_p2_100522253_100522146_100522100.zip 2
+
+
+# manual testing from test/
+./ssoo_p2_100522253_100522146_100522100/scripter ./InputScripts/1_basic_scripter.sh 2>errores_scr.txt | sed -E 's/(\[|"|\*)?[0-9]+(\]|"|\*)?//g' >output_scr.txt
+
+cd ../src/; bash zipper.sh;cd ../test/;bash tester.sh ssoo_p2_100522253_100522146_100522100.zip 1
