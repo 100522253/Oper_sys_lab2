@@ -199,6 +199,10 @@ int procesar_linea(char *linea) {
     filev -- files for redirections. NULL value means no redirection. 
     background -- 0 means foreground; 1 background.
     */
+    if(strspn(linea, " ") == strlen(linea)){
+        perror("Error: empty line in the script");
+        exit(-1);
+    }
     char *comandos[max_commands];
     int num_comandos = tokenizar_linea(linea, "|", comandos, max_commands);// Split line commands
 
@@ -246,12 +250,6 @@ int read_script(char* script_path, char lines[][max_line], int *line_count){
     while((bytes_read = read(file, &char_read, sizeof(char))) > 0){
         // Check if it is a end of line
         if (char_read == '\n'){
-            // Check if it is an empty line
-            if (line_index == 0){
-                perror("There was a empty line in the script");
-                return -1;
-            }
-
             // End the line in the array
             lines[*line_count][line_index] = '\0';
             (*line_count)++;
