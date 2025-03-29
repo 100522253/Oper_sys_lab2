@@ -113,11 +113,17 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
         // --CHILD PROCESS--
         // Handle input redirection
         if(filev[0]){
-            input_fd = open(filev[0], O_RDONLY);
-            if (input_fd == -1) {
-                perror("Error opening input file for read");
+            if(iter_command == 0){
+                input_fd = open(filev[0], O_RDONLY);
+                if (input_fd == -1) {
+                    perror("Error opening input file for read");
+                    exit(-1);
+                }
+            } else {
+                perror("Commands between pipes cannot have redirections");
                 exit(-1);
             }
+            
 
         } else if (*prev_pipe_fd != -1) {
                 input_fd = *prev_pipe_fd; // Use previous pipe's read end
@@ -133,9 +139,14 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd){
         
         // Handle output redirection
         if (filev[1]){
-            output_fd = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
-            if (output_fd == -1) {
-                perror("Error creating output file");
+            if(iter_command == num_commands - 1){
+                output_fd = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
+                if (output_fd == -1) {
+                    perror("Error creating output file");
+                    exit(-1);
+                }
+            } else {
+                perror("Commands between pipes cannot have redirections");
                 exit(-1);
             }
         } else if (num_commands > 1 && iter_command < num_commands - 1) {
