@@ -334,7 +334,7 @@ int main(int argc, char *argv[]){
     int line_count = 0;
     lines = (char**)malloc(max_lines * sizeof(char*));
     if (lines == NULL) {
-        printf("Error allocating the memory.\n");
+        perror("Error allocating the memory.");
         return -1;
     }
 

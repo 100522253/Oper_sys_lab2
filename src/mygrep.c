@@ -6,10 +6,6 @@
 #include <fcntl.h>
 #include <signal.h>
 
-
-
-
-
 int main(int argc, char ** argv) {
     if (argc != 3) { // Check the correct number of inputs
         printf("Usage: %s <ruta_fichero> <cadena_busqueda>\n", argv[0]);
@@ -24,34 +20,52 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
+    char *buffer = (char*)calloc(2048, sizeof(char)); // clear all the space with calloc
+    int buffer_idx = 0;
+    if(!buffer){
+        perror("Error allocating the buffer");
+        exit(-1);
+    }
+
+    int line_idx = 0;
     size_t byte_read;
-    char char_read = 0;     // Char read by the read syscall
-    int line_count = 0;     // Counter of lines
-    int input_idx = 0;      // Index of the input string searched
-    char string_found = 0;  // Flag whether for the seeked string found
+    char char_read;     // Char read by the read syscall
+    char string_found_in_file = 0;  // Flag whether for the seeked string found
+    char string_found_in_line = 0;
 
     while ((byte_read = read(fd, &char_read, sizeof(char))) > 0){
-        if (char_read == '\n'){ // New line -> reset counters
-            line_count++;
-            input_idx = 0;
-        } else if (char_read == argv[2][input_idx]){ // Read char is in seeked string
-            input_idx++;
+        if(char_read == '\n'){
+            if (string_found_in_line){
+                printf("%s\n", buffer);
+                string_found_in_line = 0;
+            }
+            memset(buffer, 0, sizeof(buffer)); 
+            buffer_idx = 0;
+            line_idx = 0;
+        } else if (char_read == argv[2][buffer_idx]){ // Read char is in seeked string
+            buffer[line_idx++] = char_read;
+            buffer_idx++;        
+            if(buffer_idx >= strlen(argv[2])){
+                string_found_in_line = 1;
+                string_found_in_file = 1;
+                buffer_idx = 0;
+            }
         } else {
-            input_idx = 0; // Char not in seeked string
+            buffer[line_idx++] = char_read;
+            buffer_idx = 0;
         }
 
-        if (input_idx >= strlen(argv[2])){
-            string_found = 1;
-            char line_char = (char)line_count;
-            if(write(STDOUT_FILENO, &line_char, sizeof(line_char)) < 0){
-                perror("Error writing in the standart output");
-                return -1;
-            };
-            input_idx = 0;
-            //printf("%d\n", line_count);
-        }
+
     }
-    // Check write == -1
+     // Final check to print the buffer if string was found in the last line
+    if (string_found_in_line) {
+        printf("%s\n", buffer);
+    }
+    if(byte_read == -1){
+        perror("Error reading the file");
+        close(fd);
+        return -1;
+    }
 
 
     if (close(fd) < 0){
@@ -59,9 +73,9 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    if (!string_found){ // String not found then message displayed
+    if (!string_found_in_file){ // String not found then message displayed
         printf("\"%s\" not found\n", argv[2]); // Don`t sure how to put the quotes MUST ASK ABOUT
     }
-
+    free(buffer);
     return 0;
 }
