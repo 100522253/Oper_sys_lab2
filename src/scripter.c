@@ -21,6 +21,8 @@ char * filev[max_redirections];
 // indicates whether a command or command sequence is to be executed in foreground (0) or bg (1).
 int background = 0; 
 
+int max_lines = 10;
+
 
 int tokenizar_linea(char *linea, char *delim, char *tokens[], int max_tokens) {
     /*
@@ -226,18 +228,18 @@ int procesar_linea(char *linea) {
             |       My code     |
             V                   V
         */
-        //print_commands(); //!!! Delete for submission
+        print_commands(); //!!! Delete for submission
         execute_command(num_comandos, i, &prev_pipe_fd);
     }
     return num_comandos;
 }
 
-int read_script(char* script_path, char lines[][max_line], int *line_count){
+int read_script(char* script_path, char ***lines, int *line_count) {
     /*
     Read the script and parse the lines
     */
     int file = open(script_path, O_RDONLY);
-    if (file == -1){
+    if (file == -1) {
         perror("Error opening input script");
         return -1;
     }
@@ -247,48 +249,78 @@ int read_script(char* script_path, char lines[][max_line], int *line_count){
     ssize_t bytes_read;
 
     // Read the whole script
-    while((bytes_read = read(file, &char_read, sizeof(char))) > 0){
-        // Check if it is a end of line
-        if (char_read == '\n'){
+    while ((bytes_read = read(file, &char_read, sizeof(char))) > 0) {
+        // Check if it's the end of a line
+        if (char_read == '\n') {
+            if (!(*lines)[*line_count]) { // Ensure memory is allocated
+                (*lines)[*line_count] = malloc(max_line * sizeof(char));
+                if (!(*lines)[*line_count]) {
+                    perror("Memory allocation failed");
+                    return -1;
+                }
+            }
+
             // End the line in the array
-            lines[*line_count][line_index] = '\0';
+            (*lines)[*line_count][line_index] = '\0';
             (*line_count)++;
             line_index = 0;
 
-            if (*line_count >= max_commands) {
-                perror("Exceeded maximum line count");
-                break;
+            if (*line_count >= max_lines) { // Reallocate memory for more lines
+                max_lines *= 2;
+                char **temp = realloc(*lines, max_lines * sizeof(char*));
+                if (!temp) {
+                    perror("Memory allocation failed");
+                    return -1;
+                }
+                *lines = temp;
+                
+                // Allocate memory for new lines
+                for (int i = *line_count; i < max_lines; i++) {
+                    (*lines)[i] = malloc(max_line * sizeof(char));
+                    if (!(*lines)[i]) {
+                        perror("Memory allocation failed for new lines");
+                        return -1;
+                    }
+                }
+            }
+        } else {
+            if (!(*lines)[*line_count]) { // Ensure memory is allocated
+                (*lines)[*line_count] = malloc(max_line * sizeof(char));
+                if (!(*lines)[*line_count]) {
+                    perror("Memory allocation failed");
+                    return -1;
+                }
             }
 
-        } else {
-            lines[*line_count][line_index] = char_read;
-            line_index ++;
+            (*lines)[*line_count][line_index] = char_read;
+            line_index++;
 
-            if (*line_count >= max_line -1) {
+            if (line_index >= max_line - 1) {
                 perror("Exceeded maximum line length");
                 break;
             }
         }
     }
 
-    // Check if there are an error reading the script
-    if (bytes_read == -1){
-        perror("Error reading the input string");
+    // Check for errors during reading
+    if (bytes_read == -1) {
+        perror("Error reading the input script");
         return -1;
     }
 
-    if (close(file) < 0){
+    if (close(file) < 0) {
         perror("Error closing input file");
         return -1;
     }
 
     // Handle the last line if it didn’t end with '\n'
     if (line_index > 0) {
-        lines[*line_count][line_index] = '\0';
+        (*lines)[*line_count][line_index] = '\0';
         (*line_count)++;
     }
-    return 0; // There was not any error
+    return 0; // Success
 }
+
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -298,10 +330,27 @@ int main(int argc, char *argv[]) {
     
     }
     
-    char lines[max_commands][max_line]; // Array that store the lines of the script
+    char **lines; // Array that store the lines of the script
     int line_count = 0;
+    lines = (char**)malloc(max_lines * sizeof(char*));
+    if (lines == NULL) {
+        printf("Error allocating the memory.\n");
+        return -1;
+    }
 
-    if(read_script(argv[1], lines, &line_count) < 0){
+    for (int i = 0; i < max_lines; i++) {
+    lines[i] = (char *)malloc(max_line * sizeof(char)); // Allocate memory for each line
+    if (lines[i] == NULL) {
+        printf("Memory allocation failed for line %d!\n", i);
+        return 1;
+    }
+}
+
+    if(read_script(argv[1], &lines, &line_count) < 0){
+        for (int i = 0; i < max_lines; i++) {
+            free(lines[i]);
+        }
+        free(lines);
         return -1;
     }
 
@@ -317,6 +366,10 @@ int main(int argc, char *argv[]) {
         int n_commands = procesar_linea(lines[i]);
     }
 
+    for (int i = 0; i < max_lines; i++) {
+        free(lines[i]); // Free each line
+    }
+    free(lines);
     
     return 0;
 }

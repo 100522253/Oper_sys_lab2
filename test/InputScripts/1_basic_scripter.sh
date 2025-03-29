@@ -9,4 +9,4 @@ wc foo.txt
 wc -l foo.txt
 ls -l
 cat noexiste.txt
-ls 
+ls

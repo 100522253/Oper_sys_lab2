@@ -1,4 +1,5 @@
 ## Script de SSOO
+pwd | ls &
 ls
 echo "ssoo,os"
 cat file1.txt
@@ -10,3 +11,4 @@ wc -l foo.txt
 ls -l
 cat noexiste.txt
 ls 
+echo Muerte a los ordenadores ¡vuelta a la edad media!

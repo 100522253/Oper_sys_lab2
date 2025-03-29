@@ -7,6 +7,9 @@
 #include <signal.h>
 
 
+
+
+
 int main(int argc, char ** argv) {
     if (argc != 3) { // Check the correct number of inputs
         printf("Usage: %s <ruta_fichero> <cadena_busqueda>\n", argv[0]);
