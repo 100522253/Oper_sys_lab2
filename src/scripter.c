@@ -322,7 +322,7 @@ int read_script(char* script_path, char ***lines, int *line_count) {
 }
 
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]){
     if (argc != 2) {
         // Check arguments
         printf("Usage: %s <ruta_fichero>\n", argv[0]);
@@ -339,12 +339,13 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < max_lines; i++) {
-    lines[i] = (char *)malloc(max_line * sizeof(char)); // Allocate memory for each line
-    if (lines[i] == NULL) {
-        printf("Memory allocation failed for line %d!\n", i);
-        return 1;
+        lines[i] = (char *)malloc(max_line * sizeof(char)); // Allocate memory for each line
+        if (lines[i] == NULL) {
+            printf("Memory allocation failed for line %d!\n", i);
+            return 1;
+        }
     }
-}
+
 
     if(read_script(argv[1], &lines, &line_count) < 0){
         for (int i = 0; i < max_lines; i++) {
