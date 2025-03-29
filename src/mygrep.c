@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <signal.h>
 
+int size = 2048;
+
 int main(int argc, char ** argv) {
     if (argc != 3) { // Check the correct number of inputs
         printf("Usage: %s <ruta_fichero> <cadena_busqueda>\n", argv[0]);
@@ -20,7 +22,7 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    char *buffer = (char*)calloc(2048, sizeof(char)); // clear all the space with calloc
+    char *buffer = (char*)calloc(size, sizeof(char)); // clear all the space with calloc
     int buffer_idx = 0;
     if(!buffer){
         perror("Error allocating the buffer");
@@ -55,6 +57,20 @@ int main(int argc, char ** argv) {
             buffer_idx = 0;
         }
 
+        if (line_idx >= size){
+            size *= 2;
+            char *temp = realloc(*buffer, size * sizeof(char));
+                if (!temp) { // Error reallocating
+                    if (!string_found_in_file){
+                        printf("%s not found\n", argv[2]);
+                    }
+                    perror("Memory allocation failed");
+                    close(fd);
+                    free(buffer);
+                    return -1;
+                }
+                *buffer = temp; // set pointer
+        }
 
     }
      // Final check to print the buffer if string was found in the last line
