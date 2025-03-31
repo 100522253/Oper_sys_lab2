@@ -23,7 +23,6 @@ int main(int argc, char ** argv) {
     }
 
     char *buffer = (char*)calloc(size, sizeof(char)); // clear all the space with calloc
-    int buffer_idx = 0;
     if(!buffer){
         perror("Error allocating the buffer");
         exit(-1);
@@ -33,32 +32,21 @@ int main(int argc, char ** argv) {
     size_t byte_read;
     char char_read;     // Char read by the read syscall
     char string_found_in_file = 0;  // Flag whether for the seeked string found
-    char string_found_in_line = 0;
 
     while ((byte_read = read(fd, &char_read, sizeof(char))) > 0){
         if(char_read == '\n'){
-            if (string_found_in_line){
+            if (strstr(buffer,argv[2])){
                 printf("%s\n", buffer);
-                string_found_in_line = 0;
-            }
-            memset(buffer, 0, sizeof(buffer)); 
-            buffer_idx = 0;
-            line_idx = 0;
-        } else if (char_read == argv[2][buffer_idx]){ // Read char is in seeked string
-            buffer[line_idx++] = char_read;
-            buffer_idx++;        
-            if(buffer_idx >= strlen(argv[2])){
-                string_found_in_line = 1;
                 string_found_in_file = 1;
-                buffer_idx = 0;
             }
-        } else {
+            memset(buffer, 0, sizeof(buffer));
+            line_idx = 0;
+        } else {    
             buffer[line_idx++] = char_read;
-            buffer_idx = 0;
         }
 
         if (line_idx >= size){
-            size *= 2;
+            size += 1024;
             char *temp = realloc(buffer, size * sizeof(char));;
                 if (!temp) { // Error reallocating
                     if (!string_found_in_file){
@@ -74,8 +62,9 @@ int main(int argc, char ** argv) {
 
     }
      // Final check to print the buffer if string was found in the last line
-    if (string_found_in_line) {
+    if (strstr(buffer,argv[2])){
         printf("%s\n", buffer);
+        string_found_in_file = 1;
     }
     if(byte_read == -1){
         perror("Error reading the file");
@@ -90,7 +79,7 @@ int main(int argc, char ** argv) {
     }
 
     if (!string_found_in_file){ // String not found then message displayed
-        printf("\"%s\" not found\n", argv[2]); // Don`t sure how to put the quotes MUST ASK ABOUT
+        printf("%s not found\n", argv[2]); // Don`t sure how to put the quotes MUST ASK ABOUT
     }
     free(buffer);
     return 0;
