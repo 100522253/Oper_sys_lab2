@@ -10,7 +10,7 @@ int size = 1024;
 
 int main(int argc, char ** argv) {
     if (argc != 3) { // Check the correct number of inputs
-        printf("Usage: %s <ruta_fichero> <cadena_busqueda>\n", argv[0]);
+        printf("Usage: %s <ruta_fichero> <cadena_busqueda>\n", argv[0]); //s
         return -1;
     }
 
