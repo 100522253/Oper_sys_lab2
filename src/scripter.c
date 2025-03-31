@@ -213,7 +213,7 @@ int procesar_linea(char *linea) {
     background -- 0 means foreground; 1 background.
     */
     if(strspn(linea, " ") == strlen(linea)){
-        perror("Error: empty line in the script");
+        perror("Error: empty line in the script"); //s
         exit(-1);
     }
     char *comandos[max_commands];
@@ -307,7 +307,7 @@ int read_script(char* script_path, char ***lines, int *line_count) {
             line_index++;
 
             if (line_index >= max_line - 1) {
-                perror("Exceeded maximum line length");
+                perror("Exceeded maximum line length"); //S
                 break;
             }
         }
@@ -315,7 +315,7 @@ int read_script(char* script_path, char ***lines, int *line_count) {
 
     // Check for errors during reading
     if (bytes_read == -1) {
-        perror("Error reading the input script");
+        perror("Error reading the input script"); //s
         return -1;
     }
 
@@ -336,7 +336,7 @@ int read_script(char* script_path, char ***lines, int *line_count) {
 int main(int argc, char *argv[]){
     if (argc != 2) {
         // Check arguments
-        printf("Usage: %s <ruta_fichero>\n", argv[0]);
+        printf("Usage: %s <ruta_fichero>\n", argv[0]); //S
         return -1;
     
     }
@@ -368,7 +368,7 @@ int main(int argc, char *argv[]){
 
     // Check ##Script de SSOO
     if (strcmp(lines[0],"## Script de SSOO") != 0){
-        perror("The script does not start with: \"## Script de SSOO\"\n");
+        perror("The script does not start with: \"## Script de SSOO\"\n"); //S
         return -1;
     }
 
