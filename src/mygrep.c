@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <signal.h>
 
-int size = 2048;
+int size = 1024;
 
 int main(int argc, char ** argv) {
     if (argc != 3) { // Check the correct number of inputs
@@ -59,7 +59,7 @@ int main(int argc, char ** argv) {
 
         if (line_idx >= size){
             size *= 2;
-            char *temp = realloc(*buffer, size * sizeof(char));
+            char *temp = realloc(buffer, size * sizeof(char));;
                 if (!temp) { // Error reallocating
                     if (!string_found_in_file){
                         printf("%s not found\n", argv[2]);
@@ -69,7 +69,7 @@ int main(int argc, char ** argv) {
                     free(buffer);
                     return -1;
                 }
-                *buffer = temp; // set pointer
+                buffer = temp; // set pointer
         }
 
     }
