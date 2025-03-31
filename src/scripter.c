@@ -183,7 +183,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd) {
             close(fd[0]);
         }
 
-        // execute the command // TODO
+        // execute the command
         execvp(argvv[0], argvv);
         perror("Command execution failed");
         exit(-1);
