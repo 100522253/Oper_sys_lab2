@@ -142,7 +142,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd) {
         // Handle output redirection
         if (filev[1]) {
             if (iter_command == num_commands - 1) {
-                output_fd = open(filev[1], O_RDWR | O_CREAT | O_TRUNC, 0660);
+                output_fd = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0660);
                 if (output_fd == -1) {
                     perror("Error creating output file");
                     exit(-1);
