@@ -39,7 +39,7 @@ int main(int argc, char ** argv) {
                 printf("%s\n", buffer);
                 string_found_in_file = 1;
             }
-            memset(buffer, 0, sizeof(buffer));
+            memset(buffer, 0, size);
             line_idx = 0;
         } else {    
             buffer[line_idx++] = char_read;
