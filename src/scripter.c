@@ -203,7 +203,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd) {
             waitpid(pid, &status,
                     0); // Wait for child process if not background
         } else {
-            printf(“%d”,pid); // Background (&) activated, print the child pid
+            printf("%d",pid); // Background (&) activated, print the child pid
         }
         // End parent
     }
