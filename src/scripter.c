@@ -346,8 +346,7 @@ int main(int argc, char *argv[]) {
     if (argc != 2) {
         // Check arguments
         errno = EINVAL;
-        perror("Incorrect number of arguments");
-        printf("Usage: %s <ruta_fichero>\n", argv[0]);
+        perror("Usage: scripter <ruta_fichero>");
         return 1;
     }
 
