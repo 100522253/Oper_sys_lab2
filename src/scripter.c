@@ -212,7 +212,7 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd) {
 }
 
 void remove_quotes_from_args(char *argv[]) {
-    for (int i = 0; argv[i] != NULL; i++) {
+    for (int i = 1; argv[i] != NULL; i++) {
         int len = strlen(argv[i]);
         if (len > 0 && argv[i][0] == '"') {
             // Remove leading quote by shifting the string to the left.
