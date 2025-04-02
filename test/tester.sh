@@ -1,34 +1,48 @@
+#!/bin/bash
 CalculateSimilarity() {
     bash_file=$1
     scripter_file=$2
 
-    files_exist=1
-    if [ ! -f ${bash_file} ]; then
-        echo "${bash_file} does not exist."
-        files_exist=0
+    # Verificar si los archivos existen
+    if [ ! -f "$bash_file" ]; then
+        echo "$bash_file does not exist."
+        return 1
     fi
 
-    if [ ! -f ${scripter_file} ]; then
-        echo "${scripter_file} does not exist."
-        files_exist=0
+    if [ ! -f "$scripter_file" ]; then
+        echo "$scripter_file does not exist."
+        return 1
     fi
 
-    similarity=0
-    if [ $files_exist == "1" ]; then
-        # Count the total number of lines in both files
-        total_lines=$(cat $bash_file $scripter_file | wc -l)
-        # Calculate similarity percentage
-        differing_lines=$(diff -u $bash_file $scripter_file | tail -n $total_lines | grep -E "^\+|^\-" | wc -l)
-        # echo "$scripter_file - $bash_file, total lines=$total_lines, differing_lines=$differing_lines"
-        if [ $total_lines = "0" ]; then
-            echo "Error: division by 0 is not allowed"
-        else
-            similarity=$((100 - (100 * differing_lines) / total_lines))
-        fi
+    # Contar líneas efectivas (ignorando líneas vacías)
+    lines_bash=$(grep -cve '^\s*$' "$bash_file")
+    lines_scripter=$(grep -cve '^\s*$' "$scripter_file")
+
+
+    #lines_bash=$(cat $bash_file | wc -l)
+    #lines_scripter=$(cat $scripter_file | wc -l)
+
+    #echo $lines_bash
+    #echo $lines_scripter
+
+    
+    max_lines=$(( lines_bash > lines_scripter ? lines_bash : lines_scripter ))
+
+
+    if [ "$max_lines" -eq 0 ]; then
+        echo "Error: both files are empty."
+        return 1
     fi
+
+    # Contar líneas diferentes ignorando espacios en blanco
+    differing_lines=$(diff -w -y --suppress-common-lines "$bash_file" "$scripter_file" | grep -c '^[^[:space:]]')
+
+    # Calcular porcentaje de similitud
+    similarity=$((100 - (100 * differing_lines) / max_lines))
 
     return $similarity
 }
+
 
 # Create test environment
 dir_name_env_stu="test_student"
@@ -78,10 +92,13 @@ if [ -d $out_dir ]; then
     rm -rf $out_dir
 fi
 
-unzip -o $1 -d $out_dir
+unzip -j -o $1 -d $out_dir
 
 # Move to the directory where the student code is
 cd $out_dir
+
+# Remove windows carriage return
+sed -i 's/\r$//' scripter.c autores.txt mygrep.c  Makefile
 
 # Compile the student code
 make
@@ -106,12 +123,16 @@ else
 fi
 
 # Read the file autores.txt line by line
-pattern="^[0-9]+,[A-Za-z]+,[A-Za-z]+$"
+#pattern="^[0-9]+,[A-Za-z]+,[A-Za-z]+$"
+#pattern="^[0-9]+,[A-Za-z]+([[:space:]]+[A-Za-z]+)?,[A-Za-z]+$"
+pattern="^[0-9]+,[[:alpha:] ]+,[[:alpha:] ]+$"
 line_number=0
 all_valid=1
+# Eliminar espacios al inicio/final y normalizar
+sed -i 's/^[[:space:]]*//;s/[[:space:]]*$//' "$authors_file"
 while IFS= read -r line; do
     line_number=$((line_number + 1))
-    if [ -z $line ]; then
+    if [[ -z "${line}" ]] || [[ "$line" =~ ^[[:space:]]*$ ]]; then
         echo "[ENG] Skipping empty line $line_number."
         echo "[ESP] Omitiendo la línea vacía $line_number."
         continue
@@ -164,6 +185,8 @@ else
     exit 0
 fi
 
+
+
 for i in $dir_name_env_shell $dir_name_env_stu; do
 
     if [ $i == $dir_name_env_stu ]; then
@@ -211,11 +234,11 @@ EOF
     if [ $i == $dir_name_env_stu ]; then
         # students output
         #echo "../scripter ${PWD}/../InputScripts/$in_script_file_name_stu > ${PWD}/../${output_stu} 2> ${PWD}/../${error_stu}"
-        ../scripter ${PWD}/../InputScripts/$in_script_file_name_stu 2>${PWD}/../${error_stu} | sed -E 's/(\[|"|\*)?[0-9]+(\]|"|\*)?//g' >${PWD}/../${output_stu}
+        ../scripter "${PWD}/../InputScripts/$in_script_file_name_stu" 2>"${PWD}/../${error_stu}" | sed -E 's/(\[|"|\*)?[0-9]+(\]|"|\*)?//g' >"${PWD}/../${output_stu}"
     else
         # SO output
         #echo "${PWD}/../InputScripts/$in_script_file_name_bash > ${PWD}/../${output_shell} 2> ${PWD}/../${error_shell}"
-        ${PWD}/../InputScripts/$in_script_file_name_bash 2>${PWD}/../${error_shell} | sed -E 's/(\[|"|\*)?[0-9]+(\]|"|\*)?//g' >${PWD}/../${output_shell}
+        "${PWD}/../InputScripts/$in_script_file_name_bash" 2>"${PWD}/../${error_shell}" | sed -E 's/(\[|"|\*)?[0-9]+(\]|"|\*)?//g' >"${PWD}/../${output_shell}"
     fi
     cd ..
 done
