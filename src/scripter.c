@@ -255,7 +255,7 @@ int procesar_linea(char *linea) {
 
     int prev_pipe_fd = -1;
     for (int i = 0; i < num_comandos; i++) {
-        int args_count = tokenizar_linea(comandos[i], " \t\n", argvv, max_args);
+        tokenizar_linea(comandos[i], " \t\n", argvv, max_args);
         procesar_redirecciones(argvv);
         remove_quotes_from_args(argvv);
         /*
@@ -401,10 +401,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Process the lines
-    for (size_t i = 1; i < line_count; i++) {
+    for (int i = 1; i < line_count; i++) {
         // char example_line[] = "ls -l | pwd &";//"ls -l > pepe.txt | grep
         // scripter | wc -l !> redir_out.txt &";
-        int n_commands = procesar_linea(lines[i]);
+        procesar_linea(lines[i]);
     }
 
     for (int i = 0; i < max_lines; i++) {

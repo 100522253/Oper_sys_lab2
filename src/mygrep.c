@@ -68,7 +68,7 @@ int main(int argc, char ** argv) {
         printf("%s\n", buffer);
         string_found_in_file = 1;
     }
-    if(byte_read == -1){
+    if(byte_read == (size_t)-1){
         perror("Error reading the file");
         close(fd);
         return -1;
