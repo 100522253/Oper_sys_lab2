@@ -57,7 +57,9 @@ void procesar_redirecciones(char *args[]) {
     filev[2] = NULL;
     // Store the pointer to the filename if needed.
     // args[i] set to NULL once redirection is processed
-    for (int i = 0; args[i] != NULL; i++) {
+    for (int i = 0; i < max_args; i++) {
+        if (args[i] == NULL)
+            continue;
         if (strcmp(args[i], "<") == 0) {
             filev[0] = args[i + 1];
             args[i] = NULL;
@@ -209,6 +211,20 @@ void execute_command(int num_commands, int iter_command, int *prev_pipe_fd) {
     }
 }
 
+void remove_quotes_from_args(char *argv[]) {
+    for (int i = 0; argv[i] != NULL; i++) {
+        int len = strlen(argv[i]);
+        if (len > 0 && argv[i][0] == '"') {
+            // Remove leading quote by shifting the string to the left.
+            memmove(argv[i], argv[i] + 1, len);
+            len--;
+        }
+        if (len > 0 && argv[i][len - 1] == '"') {
+            argv[i][len - 1] = '\0';
+        }
+    }
+}
+
 int procesar_linea(char *linea) {
     /*
     This function processes the input command line and returns in global
@@ -241,11 +257,12 @@ int procesar_linea(char *linea) {
     for (int i = 0; i < num_comandos; i++) {
         int args_count = tokenizar_linea(comandos[i], " \t\n", argvv, max_args);
         procesar_redirecciones(argvv);
+        remove_quotes_from_args(argvv);
         /*
                 |       My code     |
                 V                   V
         */
-        // print_commands(); //!!! Delete for submission
+        //print_commands(); //!!! Delete for submission
         execute_command(num_comandos, i, &prev_pipe_fd);
     }
     return num_comandos;

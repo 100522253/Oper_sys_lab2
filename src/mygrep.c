@@ -10,29 +10,19 @@
 int size = 1024;
 
 int main(int argc, char ** argv) {
-    if (argc != 3 && argc != 2) { // Check the correct number of inputs
+    if (argc != 3) { // Check the correct number of inputs
         errno = EINVAL;
         perror("Usage: mygrep <ruta_fichero> <cadena_busqueda>"); //s
         return -1;
     }
 
-    int fd;
-    char *search_string;
-
-    // Determine input source and search string
-    if (argc == 3) {
-        // Open file for reading
-        fd = open(argv[1], O_RDONLY);
-        if (fd == -1) {
-            perror("Error opening input file");
-            return -1;
-        }
-        search_string = argv[2];
-    } else { // argc == 2, read from stdin
-        fd = STDIN_FILENO;
-        search_string = argv[1];
+    // Open the file
+    int fd = open(argv[1], O_RDWR);
+    if (fd == -1){
+        // Check if the file was opended correctly
+        perror("Error opening input script");
+        return -1;
     }
-
 
     char *buffer = (char*)calloc(size, sizeof(char)); // clear all the space with calloc
     if(!buffer){
@@ -47,7 +37,7 @@ int main(int argc, char ** argv) {
 
     while ((byte_read = read(fd, &char_read, sizeof(char))) > 0){
         if(char_read == '\n'){
-            if (strstr(buffer,search_string)){
+            if (strstr(buffer,argv[2])){
                 printf("%s\n", buffer);
                 string_found_in_file = 1;
             }
@@ -62,7 +52,7 @@ int main(int argc, char ** argv) {
             char *temp = realloc(buffer, size * sizeof(char));;
                 if (!temp) { // Error reallocating
                     if (!string_found_in_file){
-                        printf("%s not found\n", search_string);
+                        printf("%s not found\n", argv[2]);
                     }
                     perror("Memory allocation failed");
                     close(fd);
@@ -74,7 +64,7 @@ int main(int argc, char ** argv) {
 
     }
      // Final check to print the buffer if string was found in the last line
-    if (strstr(buffer,search_string)){
+    if (strstr(buffer,argv[2])){
         printf("%s\n", buffer);
         string_found_in_file = 1;
     }
@@ -91,7 +81,7 @@ int main(int argc, char ** argv) {
     }
 
     if (!string_found_in_file){ // String not found then message displayed
-        printf("%s not found\n", search_string); // Don`t sure how to put the quotes MUST ASK ABOUT
+        printf("%s not found\n", argv[2]); // Don`t sure how to put the quotes MUST ASK ABOUT
     }
     free(buffer);
     return 0;
